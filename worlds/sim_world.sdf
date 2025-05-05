@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="default">
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <name>table</name>
+      <uri>file://$(find manipulator_description)/models/table/model.sdf</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+    <include>
+      <name>manipulator</name>
+      <uri>file://$(find manipulator_description)/urdf/manipulator.urdf</uri>
+      <pose>0 0 0.05 0 0 0</pose>
+    </include>
+  </world>
+</sdf>
+

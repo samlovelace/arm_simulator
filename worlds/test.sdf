@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+    <world name="manipulator_world">
+        <!-- Physics Engine -->
+        <physics type="ode">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1</real_time_factor>
+        </physics>
+
+        <!-- Lighting -->
+        <light name="sun" type="directional">
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+            <direction>-0.5 0.5 -1</direction>
+        </light>
+
+        <!-- Ground Plane -->
+        <include>
+            <uri>model://ground_plane</uri>
+        </include>
+
+        <!-- Table -->
+        <include>
+            <uri>model://table</uri>
+        </include>
+
+        <!-- Manipulator -->
+        <include>
+            <uri>model://manipulator</uri>
+        </include>
+
+        <!-- Joint Position Publisher Plugin -->
+        <plugin name="joint_position_publisher" filename="libJointPositionController.so">
+            <joint_name>arm_joint</joint_name>
+            <topic>/manipulator/joint_positions</topic>
+        </plugin>
+    </world>
+</sdf>
+
