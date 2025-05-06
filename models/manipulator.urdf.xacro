@@ -1,7 +1,17 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://ros.org/wiki/xacro" name="simple_arm">
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="three_link_manipulator">
 
   <xacro:property name="pi" value="3.141592653589793"/>
+
+  <!-- Dummy Root Link -->
+  <link name="dummy_root"/>
+
+  <!-- Fixed joint to base_link -->
+  <joint name="fixed_base" type="fixed">
+    <parent link="dummy_root"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
 
   <!-- Base Link -->
   <link name="base_link">
@@ -24,6 +34,7 @@
                ixy="0.0" ixz="0.0" iyz="0.0"/>
     </inertial>
   </link>
+
 
   <!-- Joint 1 -->
   <joint name="joint1" type="revolute">
@@ -58,5 +69,74 @@
     </inertial>
   </link>
 
-</robot>
+  <!-- Joint 2 -->
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="5" velocity="1" lower="-${pi}" upper="${pi}"/>
+  </joint>
 
+  <!-- Link 2 -->
+  <link name="link2">
+    <visual>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.5" radius="0.05"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0.2 0.8 0.2 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.5" radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.005" iyy="0.005" izz="0.005"
+               ixy="0.0" ixz="0.0" iyz="0.0"/>
+    </inertial>
+  </link>
+
+  <!-- Joint 3 -->
+  <joint name="joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="5" velocity="1" lower="-${pi}" upper="${pi}"/>
+  </joint>
+
+  <!-- Link 3 -->
+  <link name="link3">
+    <visual>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.5" radius="0.05"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0.2 0.2 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.5" radius="0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.005" iyy="0.005" izz="0.005"
+               ixy="0.0" ixz="0.0" iyz="0.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="link3">
+    <gravity>false</gravity>
+  </gazebo>
+
+</robot>
