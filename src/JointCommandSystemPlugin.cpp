@@ -25,7 +25,7 @@ public:
     this->model = ignition::gazebo::Model(entity);
     if (!this->model.Valid(ecm))
     {
-      std::cerr << "#################### Invalid model entity. #####################" << std::endl;
+      std::cerr << "nvalid model entity." << std::endl;
       return;
     }
 
