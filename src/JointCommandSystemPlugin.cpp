@@ -25,7 +25,7 @@ public:
     this->model = ignition::gazebo::Model(entity);
     if (!this->model.Valid(ecm))
     {
-      std::cerr << "Invalid model entity." << std::endl;
+      std::cerr << "#################### Invalid model entity. #####################" << std::endl;
       return;
     }
 
@@ -45,14 +45,13 @@ public:
 
   void PreUpdate(const ignition::gazebo::UpdateInfo &,
                  ignition::gazebo::EntityComponentManager &ecm) override
-  {
-    ignmsg << "[JointCommandSystemPlugin] PreUpdate() running" << std::endl;
+  { 
     if (this->jointCommands.empty())
       return;
 
     auto joints = this->model.Joints(ecm);
     for (size_t i = 0; i < joints.size() && i < this->jointCommands.size(); ++i)
-    {
+    {  
       auto posComp = ecm.Component<ignition::gazebo::components::JointPosition>(joints[i]);
       if (!posComp)
       {
