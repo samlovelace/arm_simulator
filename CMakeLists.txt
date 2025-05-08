@@ -17,6 +17,11 @@ ament_target_dependencies(joint_command_plugin
   rclcpp
   std_msgs
 )
+
+include_directories(joint_command_plugin 
+  ${CMAKE_CURRENT_LIST_DIR}/include
+)
+
 install(TARGETS joint_command_plugin
         LIBRARY DESTINATION lib)
 

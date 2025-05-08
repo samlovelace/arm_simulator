@@ -1,90 +1,91 @@
-#include <ignition/gazebo/System.hh>
-#include <ignition/gazebo/Model.hh>
-#include <ignition/gazebo/components/Joint.hh>
-#include <ignition/gazebo/components/JointPosition.hh>
-#include <ignition/plugin/Register.hh>
 
-#include <rclcpp/rclcpp.hpp>
-#include <std_msgs/msg/float64_multi_array.hpp>
+#include "JointCommandSystemPlugin.hpp"
+#include <ignition/common/Console.hh>
 
-#include <thread>
-
-class JointCommandSystemPlugin
-    : public ignition::gazebo::System,
-      public ignition::gazebo::ISystemConfigure,
-      public ignition::gazebo::ISystemPreUpdate
+void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
+                const std::shared_ptr<const sdf::Element> &,
+                ignition::gazebo::EntityComponentManager &ecm,
+                ignition::gazebo::EventManager &)
 {
-public:
-  JointCommandSystemPlugin() = default;
-
-  void Configure(const ignition::gazebo::Entity &entity,
-                 const std::shared_ptr<const sdf::Element> &,
-                 ignition::gazebo::EntityComponentManager &ecm,
-                 ignition::gazebo::EventManager &) override
+  mModel = ignition::gazebo::Model(entity);
+  if (!mModel.Valid(ecm))
   {
-    this->model = ignition::gazebo::Model(entity);
-    if (!this->model.Valid(ecm))
-    {
-      std::cerr << "nvalid model entity." << std::endl;
-      return;
-    }
+    std::cerr << "invalid model entity." << std::endl;
 
-    rclcpp::init(0, nullptr);
-    this->rosNode = rclcpp::Node::make_shared("joint_command_node");
-
-    this->sub = this->rosNode->create_subscription<std_msgs::msg::Float64MultiArray>(
-        "/joint_commands", 10,
-        [this](const std_msgs::msg::Float64MultiArray::SharedPtr msg)
-        {
-          this->jointCommands = msg->data;
-        });
-
-    this->rosSpinThread = std::thread([this]()
-                                      { rclcpp::spin(this->rosNode); });
+    return;
   }
 
-  void PreUpdate(const ignition::gazebo::UpdateInfo &,
-                 ignition::gazebo::EntityComponentManager &ecm) override
-  { 
-    if (this->jointCommands.empty())
-      return;
-
-    auto joints = this->model.Joints(ecm);
-    for (size_t i = 0; i < joints.size() && i < this->jointCommands.size(); ++i)
-    {  
-      auto posComp = ecm.Component<ignition::gazebo::components::JointPosition>(joints[i]);
-      if (!posComp)
-      {
-        ecm.CreateComponent(joints[i],
-                            ignition::gazebo::components::JointPosition({this->jointCommands[i]}));
-      }
-      else
-      {
-        posComp->Data()[0] = this->jointCommands[i];
-      }
-    }
-  }
-
-  ~JointCommandSystemPlugin() override
+  for(int i = 0; i < mModel.JointCount(ecm); i++)
   {
-    if (this->rosSpinThread.joinable())
+    auto jnt = std::make_shared<ignition::gazebo::Joint>(mModel.Joints(ecm)[i]); 
+
+    if(sdf::JointType::FIXED == jnt->Type(ecm).value())
     {
-      rclcpp::shutdown();
-      this->rosSpinThread.join();
+      continue; 
     }
+
+    ignmsg << "Sam found a " << jointTypeToString(jnt->Type(ecm).value()) << " joint with name: " << jnt->Name(ecm).value() << "\n"; 
+    jnt->EnablePositionCheck(ecm, true);
+    mJoints.push_back(jnt); 
   }
 
-private:
-  ignition::gazebo::Model model{ignition::gazebo::kNullEntity};
-  std::shared_ptr<rclcpp::Node> rosNode;
-  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr sub;
-  std::vector<double> jointCommands;
-  std::thread rosSpinThread;
-};
+  mJointCommands = {1.57, 1.57, 1.57, 1.57, 1.57, 1.57}; 
+  mPrevPosErr = mJointCommands; 
+  mKp = {1000, 1000, 1000, 1000, 500, 1000}; 
+  mKd = {100, 100, 100, 100, 50, 100}; 
+  mPrevTime = std::chrono::steady_clock::now(); 
+}
 
-// Plugin registration
-IGNITION_ADD_PLUGIN(
-    JointCommandSystemPlugin,
-    ignition::gazebo::System,
-    ignition::gazebo::ISystemConfigure,
-    ignition::gazebo::ISystemPreUpdate)
+void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo &,
+                ignition::gazebo::EntityComponentManager &ecm)
+{
+  auto now = std::chrono::steady_clock::now();
+
+  for(int i = 0; i < mJoints.size(); i++)
+  {
+    auto jnt = mJoints[i]; 
+    if(jnt->Position(ecm).has_value())
+    {
+      auto posVec = jnt->Position(ecm).value();
+      
+      if(0 == posVec.size())
+      {
+        return; 
+      }
+
+      //ignmsg << "joint: " << jnt->Name(ecm).value() << " Pos: " << posVec[0] << "\n";
+ 
+      auto dt = std::chrono::duration<double>(now - mPrevTime).count(); 
+
+      double posErr = mJointCommands[i] - posVec[0]; 
+      double errDeriv = (posErr - mPrevPosErr[i]) / dt; 
+
+      double forceVal = mKp[i] * posErr + mKd[i] * errDeriv; 
+
+      std::vector<double> force(1, forceVal); 
+      jnt->SetForce(ecm, force); 
+      mPrevPosErr[i] = posErr;
+
+    }
+
+  }
+  mPrevTime = now;
+
+}
+
+std::string JointCommandSystemPlugin::jointTypeToString(const sdf::JointType& aType)
+{
+  switch (aType)
+  {
+  case sdf::JointType::REVOLUTE:
+    return "Revolute";
+  default:
+    return "I'm to lazy to convert the other types right now"; 
+  }
+}
+
+
+JointCommandSystemPlugin::~JointCommandSystemPlugin()
+{
+
+}

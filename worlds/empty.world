@@ -128,8 +128,9 @@
     </include>
     <model name='ur10'>
     <plugin filename="libjoint_command_plugin.so" name="JointCommandSystemPlugin"/>
+
     <joint name='world_joint' type='fixed'>
-      <pose relative_to='__model__'>0 0 1.015 0 -0 0</pose>
+      <pose relative_to='__model__'>0 0 2.115 0 -0 0</pose>
       <parent>world</parent>
       <child>base_link</child>
     </joint>
@@ -185,6 +186,7 @@
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <initial_position>0.5</initial_position> <!-- Set initial position -->
     </joint>
     <link name='shoulder_link'>
       <pose relative_to='shoulder_pan_joint'>0 0 0 0 -0 0</pose>
