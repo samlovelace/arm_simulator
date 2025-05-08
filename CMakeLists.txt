@@ -11,7 +11,13 @@ find_package(ignition-gazebo6 REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
-add_library(joint_command_plugin SHARED src/JointCommandSystemPlugin.cpp)
+set(SOURCES 
+  ${CMAKE_CURRENT_LIST_DIR}/src/JointCommandSystemPlugin.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/RateController.cpp
+)
+
+add_library(joint_command_plugin SHARED ${SOURCES})
+
 ament_target_dependencies(joint_command_plugin
   ignition-gazebo6
   rclcpp

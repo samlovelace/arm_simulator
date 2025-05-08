@@ -2,10 +2,11 @@
 #include "JointCommandSystemPlugin.hpp"
 #include <ignition/common/Console.hh>
 
+
 void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
-                const std::shared_ptr<const sdf::Element> &,
-                ignition::gazebo::EntityComponentManager &ecm,
-                ignition::gazebo::EventManager &)
+                                         const std::shared_ptr<const sdf::Element> &,
+                                         ignition::gazebo::EntityComponentManager &ecm,
+                                         ignition::gazebo::EventManager &)
 {
   mModel = ignition::gazebo::Model(entity);
   if (!mModel.Valid(ecm))
@@ -14,6 +15,21 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
 
     return;
   }
+
+  rclcpp::init(0, nullptr); 
+  mRosNode = rclcpp::Node::make_shared("joint_controller");
+  mCmdSub = mRosNode->create_subscription<std_msgs::msg::Float64MultiArray>("/joint_commands", 10, std::bind(&JointCommandSystemPlugin::commandCallback, this, std::placeholders::_1)); 
+  mPosPub = mRosNode->create_publisher<std_msgs::msg::Float64MultiArray>("/joint_positions", 10); 
+
+  mRosSpinThread = std::thread([this](){
+    rclcpp::spin(mRosNode); 
+  }); 
+
+  mPublishRate = std::make_unique<RateController>(10); 
+
+  mPublishThread = std::thread([&](){
+    jointPositionPublishLoop(ecm); 
+  });
 
   for(int i = 0; i < mModel.JointCount(ecm); i++)
   {
@@ -24,11 +40,12 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
       continue; 
     }
 
-    ignmsg << "Sam found a " << jointTypeToString(jnt->Type(ecm).value()) << " joint with name: " << jnt->Name(ecm).value() << "\n"; 
+    ignmsg << "Found a " << jointTypeToString(jnt->Type(ecm).value()) << " joint with name: " << jnt->Name(ecm).value() << "\n"; 
     jnt->EnablePositionCheck(ecm, true);
     mJoints.push_back(jnt); 
   }
 
+  // initial joint pos here 
   mJointCommands = {1.57, 1.57, 1.57, 1.57, 1.57, 1.57}; 
   mPrevPosErr = mJointCommands; 
   mKp = {1000, 1000, 1000, 1000, 500, 1000}; 
@@ -36,41 +53,89 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
   mPrevTime = std::chrono::steady_clock::now(); 
 }
 
-void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo &,
-                ignition::gazebo::EntityComponentManager &ecm)
+void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo& anUpdateInfo, ignition::gazebo::EntityComponentManager &ecm)
 {
   auto now = std::chrono::steady_clock::now();
 
+  std::vector<double> jntCmdCopy = getLatestJointCommand(); 
+  std::vector<double> jntPosCopy;
+  if(!getJointPositions(ecm, jntPosCopy))
+  {
+    return; 
+  }
+
   for(int i = 0; i < mJoints.size(); i++)
   {
-    auto jnt = mJoints[i]; 
-    if(jnt->Position(ecm).has_value())
-    {
-      auto posVec = jnt->Position(ecm).value();
-      
-      if(0 == posVec.size())
-      {
-        return; 
-      }
-
-      //ignmsg << "joint: " << jnt->Name(ecm).value() << " Pos: " << posVec[0] << "\n";
- 
       auto dt = std::chrono::duration<double>(now - mPrevTime).count(); 
 
-      double posErr = mJointCommands[i] - posVec[0]; 
+      double posErr = jntCmdCopy[i] - jntPosCopy[i]; 
       double errDeriv = (posErr - mPrevPosErr[i]) / dt; 
 
       double forceVal = mKp[i] * posErr + mKd[i] * errDeriv; 
 
       std::vector<double> force(1, forceVal); 
-      jnt->SetForce(ecm, force); 
+      mJoints[i]->SetForce(ecm, force); 
       mPrevPosErr[i] = posErr;
-
-    }
-
   }
   mPrevTime = now;
+}
 
+void JointCommandSystemPlugin::jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm)
+{
+  while(true)
+  {
+    mPublishRate->start(); 
+
+    std::vector<double> jntPos; 
+    if(!getJointPositions(ecm, jntPos))
+    {
+      continue;
+    } 
+
+    std_msgs::msg::Float64MultiArray msg; 
+    msg.set__data(jntPos); 
+
+    mPosPub->publish(msg); 
+    mPublishRate->block(); 
+  }
+
+}
+
+void JointCommandSystemPlugin::commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(mCommandMutex);
+  std::cout << "Got joint command \n";  
+  mJointCommands = msg->data; 
+}
+
+std::vector<double> JointCommandSystemPlugin::getLatestJointCommand()
+{
+  std::lock_guard<std::mutex> lock(mCommandMutex); 
+  return mJointCommands; 
+}
+
+bool JointCommandSystemPlugin::getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut)
+{
+  std::vector<double> jointPositions(6, 0); 
+  for(auto jnt : mJoints)
+  {
+    auto optPosVec = jnt->Position(ecm); 
+
+    if(optPosVec.has_value())
+    {
+      auto posVec = optPosVec.value(); 
+
+      if(0 == posVec.size())
+      {
+         return false;  
+       }
+
+      aJointVecOut.push_back(posVec[0]); 
+
+    }
+  }
+
+  return true;  
 }
 
 std::string JointCommandSystemPlugin::jointTypeToString(const sdf::JointType& aType)
@@ -84,8 +149,16 @@ std::string JointCommandSystemPlugin::jointTypeToString(const sdf::JointType& aT
   }
 }
 
-
 JointCommandSystemPlugin::~JointCommandSystemPlugin()
 {
+  rclcpp::shutdown(); 
+  if(mRosSpinThread.joinable())
+  {
+    mRosSpinThread.join(); 
+  }
 
+  if(mPublishThread.joinable())
+  {
+    mPublishThread.join(); 
+  }
 }

@@ -10,6 +10,8 @@
 
 #include <thread>
 #include <memory> 
+#include <mutex> 
+#include "RateController.h"
 
 class JointCommandSystemPlugin
     : public ignition::gazebo::System,
@@ -31,18 +33,28 @@ public:
 
 private:
   std::string jointTypeToString(const sdf::JointType& aType);
+  void commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg);
+  std::vector<double> getLatestJointCommand();
+  bool getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut);
+  void jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm);
 
   ignition::gazebo::Model mModel{ignition::gazebo::kNullEntity};
   std::shared_ptr<rclcpp::Node> mRosNode;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr mCmdSub;
+  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr mPosPub; 
   std::vector<double> mJointCommands;
   std::thread mRosSpinThread;
+  std::thread mPublishThread; 
+  std::unique_ptr<RateController> mPublishRate; 
+
 
   std::vector<std::shared_ptr<ignition::gazebo::Joint>> mJoints; 
   std::vector<double> mKp; 
   std::vector<double> mKd; 
   std::vector<double> mPrevPosErr;
   std::chrono::time_point<std::chrono::steady_clock> mPrevTime;  
+
+  std::mutex mCommandMutex; 
 };
 
 // Plugin registration
