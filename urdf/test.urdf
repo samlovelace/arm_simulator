@@ -1,6 +1,0 @@
-<robot name="test_robot">
-  <link name="link"/>
-  <gazebo>
-    <plugin name="joint_force_plugin" filename="libmy_gazebo_plugin.so"/>
-  </gazebo>
-</robot>
