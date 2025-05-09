@@ -13,13 +13,13 @@
 #include <mutex> 
 #include "RateController.h"
 
-class JointCommandSystemPlugin
+class JointPositionController
     : public ignition::gazebo::System,
       public ignition::gazebo::ISystemConfigure,
       public ignition::gazebo::ISystemPreUpdate
 {
 public:
-  JointCommandSystemPlugin() = default;
+  JointPositionController() = default;
 
   void Configure(const ignition::gazebo::Entity &entity,
                  const std::shared_ptr<const sdf::Element> &,
@@ -29,7 +29,7 @@ public:
   void PreUpdate(const ignition::gazebo::UpdateInfo &,
                  ignition::gazebo::EntityComponentManager &ecm) override;
 
-  ~JointCommandSystemPlugin() override;
+  ~JointPositionController() override;
 
 private:
   std::string jointTypeToString(const sdf::JointType& aType);
@@ -59,7 +59,7 @@ private:
 
 // Plugin registration
 IGNITION_ADD_PLUGIN(
-    JointCommandSystemPlugin,
+    JointPositionController,
     ignition::gazebo::System,
     ignition::gazebo::ISystemConfigure,
     ignition::gazebo::ISystemPreUpdate)

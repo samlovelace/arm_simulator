@@ -1,9 +1,9 @@
 
-#include "JointCommandSystemPlugin.hpp"
+#include "JointPositionController.hpp"
 #include <ignition/common/Console.hh>
 
 
-void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
+void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
                                          const std::shared_ptr<const sdf::Element> &anSdf,
                                          ignition::gazebo::EntityComponentManager &ecm,
                                          ignition::gazebo::EventManager &)
@@ -52,7 +52,7 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
 
   rclcpp::init(0, nullptr); 
   mRosNode = rclcpp::Node::make_shared("joint_controller");
-  mCmdSub = mRosNode->create_subscription<std_msgs::msg::Float64MultiArray>(commandTopicName, 10, std::bind(&JointCommandSystemPlugin::commandCallback, this, std::placeholders::_1)); 
+  mCmdSub = mRosNode->create_subscription<std_msgs::msg::Float64MultiArray>(commandTopicName, 10, std::bind(&JointPositionController::commandCallback, this, std::placeholders::_1)); 
   mPosPub = mRosNode->create_publisher<std_msgs::msg::Float64MultiArray>(publishTopicName, 10); 
 
   mRosSpinThread = std::thread([this](){
@@ -73,7 +73,7 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
   mPrevTime = std::chrono::steady_clock::now(); 
 }
 
-void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo&, ignition::gazebo::EntityComponentManager &ecm)
+void JointPositionController::PreUpdate(const ignition::gazebo::UpdateInfo&, ignition::gazebo::EntityComponentManager &ecm)
 {
   auto now = std::chrono::steady_clock::now();
 
@@ -100,7 +100,7 @@ void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo&, ig
   mPrevTime = now;
 }
 
-void JointCommandSystemPlugin::jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm)
+void JointPositionController::jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm)
 {
   while(true)
   {
@@ -121,20 +121,20 @@ void JointCommandSystemPlugin::jointPositionPublishLoop(ignition::gazebo::Entity
 
 }
 
-void JointCommandSystemPlugin::commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg)
+void JointPositionController::commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg)
 {
   std::lock_guard<std::mutex> lock(mCommandMutex);
   std::cout << "Got joint command \n";  
   mJointCommands = msg->data; 
 }
 
-std::vector<double> JointCommandSystemPlugin::getLatestJointCommand()
+std::vector<double> JointPositionController::getLatestJointCommand()
 {
   std::lock_guard<std::mutex> lock(mCommandMutex); 
   return mJointCommands; 
 }
 
-bool JointCommandSystemPlugin::getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut)
+bool JointPositionController::getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut)
 {
   std::vector<double> jointPositions(6, 0); 
   for(auto jnt : mJoints)
@@ -158,7 +158,7 @@ bool JointCommandSystemPlugin::getJointPositions(ignition::gazebo::EntityCompone
   return true;  
 }
 
-std::string JointCommandSystemPlugin::jointTypeToString(const sdf::JointType& aType)
+std::string JointPositionController::jointTypeToString(const sdf::JointType& aType)
 {
   switch (aType)
   {
@@ -169,7 +169,7 @@ std::string JointCommandSystemPlugin::jointTypeToString(const sdf::JointType& aT
   }
 }
 
-JointCommandSystemPlugin::~JointCommandSystemPlugin()
+JointPositionController::~JointPositionController()
 {
   rclcpp::shutdown(); 
   if(mRosSpinThread.joinable())

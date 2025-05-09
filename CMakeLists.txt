@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(arm_simulator)
+set(PLUGIN_NAME joint_position_controller)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -12,23 +13,23 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
 set(SOURCES 
-  ${CMAKE_CURRENT_LIST_DIR}/src/JointCommandSystemPlugin.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/src/JointPositionController.cpp
   ${CMAKE_CURRENT_LIST_DIR}/src/RateController.cpp
 )
 
-add_library(joint_command_plugin SHARED ${SOURCES})
+add_library(${PLUGIN_NAME} SHARED ${SOURCES})
 
-ament_target_dependencies(joint_command_plugin
+ament_target_dependencies(${PLUGIN_NAME}
   ignition-gazebo6
   rclcpp
   std_msgs
 )
 
-include_directories(joint_command_plugin 
+include_directories(${PLUGIN_NAME} 
   ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
-install(TARGETS joint_command_plugin
+install(TARGETS ${PLUGIN_NAME}
         LIBRARY DESTINATION lib)
 
 install(DIRECTORY launch meshes urdf worlds
