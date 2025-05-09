@@ -127,7 +127,10 @@
       <pose>0.794 0 0 0 -0 1.5708</pose>
     </include>
     <model name='ur10'>
-    <plugin filename="libjoint_command_plugin.so" name="JointCommandSystemPlugin"/>
+    <plugin filename="libjoint_command_plugin.so" name="JointCommandSystemPlugin">
+      <publish>joint_positions</publish> 
+      <command>joint_commands</command> 
+    </plugin>
     <joint name='world_joint' type='fixed'>
       <pose relative_to='__model__'>0 0 2.115 0 -0 0</pose>
       <parent>world</parent>

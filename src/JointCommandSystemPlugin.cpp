@@ -4,7 +4,7 @@
 
 
 void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
-                                         const std::shared_ptr<const sdf::Element> &,
+                                         const std::shared_ptr<const sdf::Element> &anSdf,
                                          ignition::gazebo::EntityComponentManager &ecm,
                                          ignition::gazebo::EventManager &)
 {
@@ -12,24 +12,8 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
   if (!mModel.Valid(ecm))
   {
     std::cerr << "invalid model entity." << std::endl;
-
     return;
   }
-
-  rclcpp::init(0, nullptr); 
-  mRosNode = rclcpp::Node::make_shared("joint_controller");
-  mCmdSub = mRosNode->create_subscription<std_msgs::msg::Float64MultiArray>("/joint_commands", 10, std::bind(&JointCommandSystemPlugin::commandCallback, this, std::placeholders::_1)); 
-  mPosPub = mRosNode->create_publisher<std_msgs::msg::Float64MultiArray>("/joint_positions", 10); 
-
-  mRosSpinThread = std::thread([this](){
-    rclcpp::spin(mRosNode); 
-  }); 
-
-  mPublishRate = std::make_unique<RateController>(10); 
-
-  mPublishThread = std::thread([&](){
-    jointPositionPublishLoop(ecm); 
-  });
 
   for(int i = 0; i < mModel.JointCount(ecm); i++)
   {
@@ -45,6 +29,42 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
     mJoints.push_back(jnt); 
   }
 
+  if(nullptr == anSdf)
+  {
+    std::cerr << "missing sdf tags for JointController plugin\n"; 
+    return ; 
+  }
+
+  std::string publishTopicName = "joint_positions";
+  if(anSdf->HasElement("publish"))
+  {
+      publishTopicName = anSdf->Get<std::string>("publish");
+  }
+
+  std::string commandTopicName = "joint_commands"; 
+  if(anSdf->HasElement("command"))
+  {
+      commandTopicName = anSdf->Get<std::string>("command"); 
+  }
+
+  ignmsg << "Publishing manipulator joint positions on /" << publishTopicName << "\n"; 
+  ignmsg << "Subscribing to manipulator joint commands on /" << commandTopicName << "\n";
+
+  rclcpp::init(0, nullptr); 
+  mRosNode = rclcpp::Node::make_shared("joint_controller");
+  mCmdSub = mRosNode->create_subscription<std_msgs::msg::Float64MultiArray>(commandTopicName, 10, std::bind(&JointCommandSystemPlugin::commandCallback, this, std::placeholders::_1)); 
+  mPosPub = mRosNode->create_publisher<std_msgs::msg::Float64MultiArray>(publishTopicName, 10); 
+
+  mRosSpinThread = std::thread([this](){
+    rclcpp::spin(mRosNode); 
+  }); 
+
+  mPublishRate = std::make_unique<RateController>(10); 
+  
+  mPublishThread = std::thread([&](){
+    jointPositionPublishLoop(ecm); 
+  });
+
   // initial joint pos here 
   mJointCommands = {1.57, 1.57, 1.57, 1.57, 1.57, 1.57}; 
   mPrevPosErr = mJointCommands; 
@@ -53,7 +73,7 @@ void JointCommandSystemPlugin::Configure(const ignition::gazebo::Entity &entity,
   mPrevTime = std::chrono::steady_clock::now(); 
 }
 
-void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo& anUpdateInfo, ignition::gazebo::EntityComponentManager &ecm)
+void JointCommandSystemPlugin::PreUpdate(const ignition::gazebo::UpdateInfo&, ignition::gazebo::EntityComponentManager &ecm)
 {
   auto now = std::chrono::steady_clock::now();
 
