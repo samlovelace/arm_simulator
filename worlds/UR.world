@@ -128,8 +128,8 @@
     </include>
     <model name='ur10'>
     <plugin filename="libjoint_position_controller.so" name="JointPositionController">
-      <publish>joint_positions</publish> 
-      <command>joint_commands</command> 
+      <publish>UR/joint_positions</publish> 
+      <command>UR/joint_commands</command> 
     </plugin>
     <joint name='world_joint' type='fixed'>
       <pose relative_to='__model__'>0 0 2.115 0 -0 0</pose>
