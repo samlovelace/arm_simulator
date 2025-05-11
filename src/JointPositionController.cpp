@@ -123,8 +123,7 @@ void JointPositionController::jointPositionPublishLoop(ignition::gazebo::EntityC
 
 void JointPositionController::commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg)
 {
-  std::lock_guard<std::mutex> lock(mCommandMutex);
-  std::cout << "Got joint command \n";  
+  std::lock_guard<std::mutex> lock(mCommandMutex);  
   mJointCommands = msg->data; 
 }
 
@@ -136,7 +135,6 @@ std::vector<double> JointPositionController::getLatestJointCommand()
 
 bool JointPositionController::getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut)
 {
-  std::vector<double> jointPositions(6, 0); 
   for(auto jnt : mJoints)
   {
     auto optPosVec = jnt->Position(ecm); 
@@ -148,7 +146,7 @@ bool JointPositionController::getJointPositions(ignition::gazebo::EntityComponen
       if(0 == posVec.size())
       {
          return false;  
-       }
+      }
 
       aJointVecOut.push_back(posVec[0]); 
 
