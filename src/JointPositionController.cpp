@@ -1,6 +1,8 @@
 
 #include "JointPositionController.hpp"
 #include <ignition/common/Console.hh>
+#include <thread> 
+#include <chrono> 
 
 
 void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
@@ -68,7 +70,7 @@ void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
   // initial joint pos here 
   mJointCommands = {1.57, 1.57, 1.57, 1.57, 1.57, 1.57}; 
   mPrevPosErr = mJointCommands; 
-  mKp = {1000, 1000, 1000, 1000, 500, 1000}; 
+  mKp = {1000, 5000, 1000, 5000, 500, 1000}; 
   mKd = {100, 100, 100, 100, 50, 100}; 
   mPrevTime = std::chrono::steady_clock::now(); 
 }
@@ -169,7 +171,6 @@ std::string JointPositionController::jointTypeToString(const sdf::JointType& aTy
 
 JointPositionController::~JointPositionController()
 {
-  rclcpp::shutdown(); 
   if(mRosSpinThread.joinable())
   {
     mRosSpinThread.join(); 
@@ -178,5 +179,14 @@ JointPositionController::~JointPositionController()
   if(mPublishThread.joinable())
   {
     mPublishThread.join(); 
+  }
+
+  mRosNode = nullptr; 
+  rclcpp::shutdown(); 
+
+  while(rclcpp::ok())
+  {
+    std::cout << "shutting down ROS2 plugin" << std::endl; 
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));  
   }
 }
