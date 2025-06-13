@@ -12,6 +12,13 @@ def generate_launch_description():
         'UR.world'
     )
 
+    pkg_share = get_package_share_directory('arm_simulator')
+    models_dir = os.path.join(pkg_share, 'models')
+    os.environ['IGN_GAZEBO_RESOURCE_PATH'] = models_dir + ':' + os.environ.get('IGN_GAZEBO_RESOURCE_PATH', '')
+
+    arm_sim_path = get_package_share_directory('arm_simulator')
+    os.environ['IGN_GAZEBO_RESOURCE_PATH'] = arm_sim_path + ':' + os.environ.get('IGN_GAZEBO_RESOURCE_PATH', '')
+
     return LaunchDescription([
         # Start Gazebo Sim (Ignition)
         ExecuteProcess(

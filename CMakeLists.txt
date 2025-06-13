@@ -32,7 +32,7 @@ include_directories(${PLUGIN_NAME}
 install(TARGETS ${PLUGIN_NAME}
         LIBRARY DESTINATION lib)
 
-install(DIRECTORY launch meshes urdf worlds
+install(DIRECTORY launch models urdf worlds
 DESTINATION share/${PROJECT_NAME})
 
 ament_package()
