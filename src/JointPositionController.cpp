@@ -3,6 +3,7 @@
 #include <ignition/common/Console.hh>
 #include <thread> 
 #include <chrono> 
+#include <vector> 
 
 
 void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
@@ -61,18 +62,26 @@ void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
     rclcpp::spin(mRosNode); 
   }); 
 
+  if(anSdf->HasElement("initial_position"))
+  {
+      std::string positions = anSdf->Get<std::string>("initial_position"); 
+      ignmsg << "Initial positions: " << positions; 
+
+      mJointCommands = parseVector<double>(positions); 
+  }
+
+  // initial joint pos here  
+  mPrevPosErr = mJointCommands; 
+  mKp = {1000, 5000, 1000, 5000, 500, 1000}; 
+  mKd = {100, 100, 100, 100, 50, 100}; 
+  mPrevTime = std::chrono::steady_clock::now(); 
+
   mPublishRate = std::make_unique<RateController>(10); 
   
   mPublishThread = std::thread([&](){
     jointPositionPublishLoop(ecm); 
   });
 
-  // initial joint pos here 
-  mJointCommands = {1.57, 1.57, 1.57, 1.57, 1.57, 1.57}; 
-  mPrevPosErr = mJointCommands; 
-  mKp = {1000, 5000, 1000, 5000, 500, 1000}; 
-  mKd = {100, 100, 100, 100, 50, 100}; 
-  mPrevTime = std::chrono::steady_clock::now(); 
 }
 
 void JointPositionController::PreUpdate(const ignition::gazebo::UpdateInfo&, ignition::gazebo::EntityComponentManager &ecm)

@@ -19,42 +19,55 @@ class JointPositionController
       public ignition::gazebo::ISystemPreUpdate
 {
 public:
-  JointPositionController() = default;
+	JointPositionController() = default;
 
-  void Configure(const ignition::gazebo::Entity &entity,
-                 const std::shared_ptr<const sdf::Element> &,
-                 ignition::gazebo::EntityComponentManager &ecm,
-                 ignition::gazebo::EventManager &) override;
+	void Configure(const ignition::gazebo::Entity &entity,
+					const std::shared_ptr<const sdf::Element> &,
+					ignition::gazebo::EntityComponentManager &ecm,
+					ignition::gazebo::EventManager &) override;
 
-  void PreUpdate(const ignition::gazebo::UpdateInfo &,
-                 ignition::gazebo::EntityComponentManager &ecm) override;
+	void PreUpdate(const ignition::gazebo::UpdateInfo &,
+					ignition::gazebo::EntityComponentManager &ecm) override;
 
-  ~JointPositionController() override;
+	~JointPositionController() override;
 
 private:
-  std::string jointTypeToString(const sdf::JointType& aType);
-  void commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg);
-  std::vector<double> getLatestJointCommand();
-  bool getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut);
-  void jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm);
+	std::string jointTypeToString(const sdf::JointType& aType);
+	void commandCallback(std_msgs::msg::Float64MultiArray::SharedPtr msg);
+	std::vector<double> getLatestJointCommand();
+	bool getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut);
+	void jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm);
 
-  ignition::gazebo::Model mModel{ignition::gazebo::kNullEntity};
-  std::shared_ptr<rclcpp::Node> mRosNode;
-  rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr mCmdSub;
-  rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr mPosPub; 
-  std::vector<double> mJointCommands;
-  std::thread mRosSpinThread;
-  std::thread mPublishThread; 
-  std::unique_ptr<RateController> mPublishRate; 
+  	template <typename T>
+	std::vector<T> parseVector(const std::string &str)
+	{
+		std::vector<T> result;
+		std::istringstream iss(str);
+		T value;
+		while (iss >> value)
+		{
+			result.push_back(value);
+		}
+		return result;
+	}
+
+	ignition::gazebo::Model mModel{ignition::gazebo::kNullEntity};
+	std::shared_ptr<rclcpp::Node> mRosNode;
+	rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr mCmdSub;
+	rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr mPosPub; 
+	std::vector<double> mJointCommands;
+	std::thread mRosSpinThread;
+	std::thread mPublishThread; 
+	std::unique_ptr<RateController> mPublishRate; 
 
 
-  std::vector<std::shared_ptr<ignition::gazebo::Joint>> mJoints; 
-  std::vector<double> mKp; 
-  std::vector<double> mKd; 
-  std::vector<double> mPrevPosErr;
-  std::chrono::time_point<std::chrono::steady_clock> mPrevTime;  
+	std::vector<std::shared_ptr<ignition::gazebo::Joint>> mJoints; 
+	std::vector<double> mKp; 
+	std::vector<double> mKd; 
+	std::vector<double> mPrevPosErr;
+	std::chrono::time_point<std::chrono::steady_clock> mPrevTime;  
 
-  std::mutex mCommandMutex; 
+	std::mutex mCommandMutex; 
 };
 
 // Plugin registration
