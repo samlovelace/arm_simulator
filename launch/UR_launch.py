@@ -18,6 +18,7 @@ def generate_launch_description():
 
     arm_sim_path = get_package_share_directory('arm_simulator')
     os.environ['IGN_GAZEBO_RESOURCE_PATH'] = arm_sim_path + ':' + os.environ.get('IGN_GAZEBO_RESOURCE_PATH', '')
+    os.environ['GAZEBO_IGN_SYSTEM_PLUGIN_PATH'] = arm_sim_path + "../install/arm_simulator/lib" + ':' + os.environ.get('GAZEBO_IGN_SYSTEM_PLUGIN_PATH', '') 
 
     return LaunchDescription([
         # Start Gazebo Sim (Ignition)
