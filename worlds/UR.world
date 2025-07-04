@@ -133,8 +133,17 @@
       <plugin filename="libjoint_position_controller.so" name="JointPositionController">
         <publish>UR/joint_positions</publish> 
         <command>UR/joint_commands</command>
-        <initial_position>3.14 0 0 0 0 0</initial_position> 
+        <initial_position>0 -1.57 0 0 0 0</initial_position> 
       </plugin>
+
+      <plugin filename="libstereo_camera_publisher.so" name="StereoCameraPublisher"></plugin>
+    </include>
+
+    <include>
+      <uri>model://stereo_camera</uri>
+      <pose>0 0 3 0 0 0</pose>
+
+      <plugin filename="libstereo_camera_publisher.so" name="StereoCameraPublisher"></plugin>
     </include>
 
     <light name='sun' type='directional'>
