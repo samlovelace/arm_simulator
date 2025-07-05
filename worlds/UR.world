@@ -139,11 +139,35 @@
       <plugin filename="libstereo_camera_publisher.so" name="StereoCameraPublisher"></plugin>
     </include>
 
+      <include>
+      <uri>
+      https://fuel.ignitionrobotics.org/1.0/GoogleResearch/models/Transformers_Age_of_Extinction_Mega_1Step_Bumblebee_Figure
+      </uri>
+      <pose>1 0 1.025 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>
+      https://fuel.ignitionrobotics.org/1.0/GoogleResearch/models/Avengers_Thor_PLlrpYniaeB
+      </uri>
+      <pose>1 0.5 1.025 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>
+        https://fuel.ignitionrobotics.org/1.0/GoogleResearch/models/My_Little_Pony_Princess_Celestia
+      </uri>
+      <pose>1 -0.5 1.025 0 0 1.5708</pose>
+    </include>
+
     <include>
       <uri>model://stereo_camera</uri>
-      <pose>0 0 3 0 0 0</pose>
+      <pose>0.5 0.5 1.5 0 0 1.57</pose>
+    </include>
 
-      <plugin filename="libstereo_camera_publisher.so" name="StereoCameraPublisher"></plugin>
+    <include>
+      <uri>model://VisitorChair</uri>
+      <pose>0.5 2.5 0 0 0 0.707</pose>
     </include>
 
     <light name='sun' type='directional'>
