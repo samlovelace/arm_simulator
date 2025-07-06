@@ -73,8 +73,8 @@
             <format>R8G8B8</format>
           </image>
           <clip>
-            <near>0.1</near>
-            <far>100</far>
+            <near>0.5</near>
+            <far>3.5</far>
           </clip>
         </camera>
         <always_on>1</always_on>

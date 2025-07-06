@@ -1,39 +1,8 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.1)
 project(arm_simulator)
-set(ARM_PLUGIN_NAME joint_position_controller)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+add_subdirectory(plugins/jointPositionController)
+add_subdirectory(plugins/posePublisher)
 
-# find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(ignition-gazebo6 REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-
-set(ARM_SOURCES 
-  ${CMAKE_CURRENT_LIST_DIR}/src/JointPositionController.cpp
-  ${CMAKE_CURRENT_LIST_DIR}/src/RateController.cpp
-)
-
-add_library(${ARM_PLUGIN_NAME} SHARED ${ARM_SOURCES})
-
-ament_target_dependencies(${ARM_PLUGIN_NAME}
-  ignition-gazebo6
-  rclcpp
-  std_msgs
-)
-
-include_directories(${ARM_PLUGIN_NAME} 
-  ${CMAKE_CURRENT_LIST_DIR}/include
-)
-
-install(TARGETS ${ARM_PLUGIN_NAME}
-        LIBRARY DESTINATION lib)
-
-
-install(DIRECTORY launch models urdf worlds
-DESTINATION share/${PROJECT_NAME})
-
-ament_package()
+# install common files 
+install(DIRECTORY launch models urdf worlds DESTINATION share/${PROJECT_NAME})
