@@ -57,7 +57,6 @@ void PosePublisher::PostUpdate(const ignition::gazebo::UpdateInfo&, const igniti
 
     if(pose)
     {
-		ignmsg << "Pose: " << pose->Data() << std::endl; 
 		nora_idl::msg::RobotState idlPose; 
 		convertToIdl(pose, idlPose); 
 		setLatestState(idlPose); 
