@@ -12,6 +12,7 @@ void PosePublisher::Configure(const ignition::gazebo::Entity &entity,
                                          ignition::gazebo::EntityComponentManager &ecm,
                                          ignition::gazebo::EventManager &)
 {
+	mRunning = true; 
 	mModel = ignition::gazebo::Model(entity);
 	if (!mModel.Valid(ecm))
 	{
@@ -46,7 +47,6 @@ void PosePublisher::Configure(const ignition::gazebo::Entity &entity,
 		robotStatePublishLoop(); 
 	});
 
-
 	ignmsg << "Configured to publish " << mModel.Name(ecm) << "'s state on " << publishTopicName << " at " << rate << "hz" << std::endl; 
 
 }
@@ -57,9 +57,9 @@ void PosePublisher::PostUpdate(const ignition::gazebo::UpdateInfo&, const igniti
 
     if(pose)
     {
+		ignmsg << "Pose: " << pose->Data() << std::endl; 
 		nora_idl::msg::RobotState idlPose; 
 		convertToIdl(pose, idlPose); 
-
 		setLatestState(idlPose); 
     }
 
@@ -113,22 +113,23 @@ void PosePublisher::robotStatePublishLoop()
 
 PosePublisher::~PosePublisher()
 {
-  if(mRosSpinThread.joinable())
-  {
-    mRosSpinThread.join(); 
-  }
+	setRunning(false); 
+	if(mRosSpinThread.joinable())
+	{
+		mRosSpinThread.join(); 
+	}
 
-  if(mPublishThread.joinable())
-  {
-    mPublishThread.join(); 
-  }
+	if(mPublishThread.joinable())
+	{
+		mPublishThread.join(); 
+	}
 
-  mRosNode = nullptr; 
-  //rclcpp::shutdown(); 
+	mRosNode = nullptr; 
+	//rclcpp::shutdown(); 
 
-  while(rclcpp::ok())
-  {
-    std::cout << "shutting down ROS2 plugin" << std::endl; 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));  
-  }
+	while(rclcpp::ok())
+	{
+		std::cout << "shutting down ROS2 plugin" << std::endl; 
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));  
+	}
 }

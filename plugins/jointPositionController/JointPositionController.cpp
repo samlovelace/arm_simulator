@@ -115,7 +115,6 @@ void JointPositionController::PreUpdate(const ignition::gazebo::UpdateInfo&, ign
 
 void JointPositionController::jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm)
 {
-  // TODO: update to 
   while(isRunning())
   {
     mPublishRate->start(); 
