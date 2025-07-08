@@ -2,11 +2,11 @@
 #include <ignition/gazebo/Model.hh>
 #include <ignition/gazebo/components/Joint.hh>
 #include <ignition/gazebo/components/JointPosition.hh>
+#include <ignition/gazebo/components/Pose.hh>
 #include <ignition/plugin/Register.hh>
 #include <ignition/gazebo/Joint.hh>
 
 #include <rclcpp/rclcpp.hpp>
-#include "nora_idl/msg/robot_state.hpp"
 
 #include <thread>
 #include <memory> 
@@ -26,21 +26,19 @@ public:
 					ignition::gazebo::EntityComponentManager &ecm,
 					ignition::gazebo::EventManager &) override;
 
-	void PostUpdate(const ignition::gazebo::UpdateInfo &_info,
-                    const ignition::gazebo::EntityComponentManager &_ecm) override;
+	void PostUpdate(const ignition::gazebo::UpdateInfo &,
+					const ignition::gazebo::EntityComponentManager &ecm) override;
 
 	~PosePublisher() override;
 
 private:
 
 	ignition::gazebo::Model mModel{ignition::gazebo::kNullEntity};
-	// std::shared_ptr<rclcpp::Node> mRosNode;
-	// rclcpp::Publisher<nora_idl::msg::RobotState>::SharedPtr mPosPub; 
-	// std::thread mRosSpinThread;
-	// std::thread mPublishThread; 
-	// std::unique_ptr<RateController> mPublishRate; 
-
-    // void PosePublisher::robotStatePublishLoop(ignition::gazebo::EntityComponentManager& ecm);
+	std::shared_ptr<rclcpp::Node> mRosNode;
+	//rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr mPosPub; 
+	std::thread mRosSpinThread;
+	std::thread mPublishThread; 
+	std::unique_ptr<RateController> mPublishRate; 
 
 };
 

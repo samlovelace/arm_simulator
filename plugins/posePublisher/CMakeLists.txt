@@ -11,7 +11,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ignition-gazebo6 REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(nora_idl REQUIRED)
+find_package(robot_idl REQUIRED)
 
 set(SOURCES 
   ${CMAKE_CURRENT_LIST_DIR}/PosePublisher.cpp
@@ -23,6 +23,7 @@ add_library(${PLUGIN_NAME} SHARED ${SOURCES})
 ament_target_dependencies(${PLUGIN_NAME}
   ignition-gazebo6
   rclcpp
+  robot_idl
 )
 
 include_directories(${PLUGIN_NAME} 
@@ -32,6 +33,3 @@ include_directories(${PLUGIN_NAME}
 
 install(TARGETS ${PLUGIN_NAME}
         LIBRARY DESTINATION lib)
-
-# can only call this once, biggest hack in the world
-ament_package()

@@ -8,24 +8,24 @@ def generate_launch_description():
     
     # Locate world path
     world_path = os.path.join(
-        get_package_share_directory('arm_simulator'),
+        get_package_share_directory('robot_simulator'),
         'worlds',
         'UR.world'
     )
 
     # Prepare resource paths
-    pkg_share = get_package_share_directory('arm_simulator')
+    pkg_share = get_package_share_directory('robot_simulator')
     models_dir = os.path.join(pkg_share, 'models')
 
     ign_resource_path = os.environ.get('IGN_GAZEBO_RESOURCE_PATH', '')
     os.environ['IGN_GAZEBO_RESOURCE_PATH'] = models_dir + ':' + ign_resource_path
 
-    arm_sim_path = get_package_share_directory('arm_simulator')
+    arm_sim_path = get_package_share_directory('robot_simulator')
     os.environ['IGN_GAZEBO_RESOURCE_PATH'] = arm_sim_path + ':' + os.environ.get('IGN_GAZEBO_RESOURCE_PATH', '')
 
     gazebo_ign_plugin_path = os.environ.get('GAZEBO_IGN_SYSTEM_PLUGIN_PATH', '')
     os.environ['GAZEBO_IGN_SYSTEM_PLUGIN_PATH'] = (
-        arm_sim_path + "/../install/arm_simulator/lib:" + gazebo_ign_plugin_path
+        arm_sim_path + "/../install/robot_simulator/lib:" + gazebo_ign_plugin_path
     )
 
     # ROS 2 node to run ros_ign_bridge parameter_bridge

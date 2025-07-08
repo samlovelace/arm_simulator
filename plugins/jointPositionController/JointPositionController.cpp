@@ -1,5 +1,5 @@
 
-#include "JointPositionController.hpp"
+#include "JointPositionController.h"
 #include <ignition/common/Console.hh>
 #include <thread> 
 #include <chrono> 
@@ -65,7 +65,7 @@ void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
   if(anSdf->HasElement("initial_position"))
   {
       std::string positions = anSdf->Get<std::string>("initial_position"); 
-      ignmsg << "Initial positions: " << positions; 
+      ignmsg << "Initial positions: " << positions << std::endl;  
 
       mJointCommands = parseVector<double>(positions); 
   }
