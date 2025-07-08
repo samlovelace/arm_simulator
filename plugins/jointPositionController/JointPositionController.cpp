@@ -11,6 +11,8 @@ void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
                                          ignition::gazebo::EntityComponentManager &ecm,
                                          ignition::gazebo::EventManager &)
 {
+  setRunning(true); 
+
   mModel = ignition::gazebo::Model(entity);
   if (!mModel.Valid(ecm))
   {
@@ -113,7 +115,8 @@ void JointPositionController::PreUpdate(const ignition::gazebo::UpdateInfo&, ign
 
 void JointPositionController::jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm)
 {
-  while(true)
+  // TODO: update to 
+  while(isRunning())
   {
     mPublishRate->start(); 
 
@@ -180,6 +183,8 @@ std::string JointPositionController::jointTypeToString(const sdf::JointType& aTy
 
 JointPositionController::~JointPositionController()
 {
+  setRunning(false); 
+
   if(mRosSpinThread.joinable())
   {
     mRosSpinThread.join(); 

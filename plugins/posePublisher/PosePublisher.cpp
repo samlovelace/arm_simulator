@@ -1,6 +1,7 @@
 
 #include "PosePublisher.h"
 #include <ignition/common/Console.hh>
+#include <ignition/math/Quaternion.hh>
 #include <thread> 
 #include <chrono> 
 #include <vector> 
@@ -18,10 +19,10 @@ void PosePublisher::Configure(const ignition::gazebo::Entity &entity,
 		return;
 	}
 	
-	std::string topicName = "/robot/state";
+	std::string publishTopicName = "/robot/state";
 	if(anSdf->HasElement("topic_name"))
 	{
-		topicName = anSdf->Get<std::string>("topic_name"); 
+		publishTopicName = anSdf->Get<std::string>("topic_name"); 
 	}
 
 	int rate = 10; 
@@ -30,14 +31,85 @@ void PosePublisher::Configure(const ignition::gazebo::Entity &entity,
 		rate = anSdf->Get<int>("rate"); 
 	}
 
-	ignmsg << "Configured to publish " << mModel.Name(ecm) << " state on " << topicName << " at " << rate << "hz" << std::endl; 
+  	//rclcpp::init(0, nullptr); 
+	
+	mRosNode = rclcpp::Node::make_shared("pose_publisher");
+	mPosPub = mRosNode->create_publisher<nora_idl::msg::RobotState>(publishTopicName, 10); 
+
+	mRosSpinThread = std::thread([this](){
+		rclcpp::spin(mRosNode); 
+	}); 
+
+	mPublishRate = std::make_unique<RateController>(rate); 
+	
+	mPublishThread = std::thread([&](){
+		robotStatePublishLoop(); 
+	});
+
+
+	ignmsg << "Configured to publish " << mModel.Name(ecm) << "'s state on " << publishTopicName << " at " << rate << "hz" << std::endl; 
 
 }
 
 void PosePublisher::PostUpdate(const ignition::gazebo::UpdateInfo&, const ignition::gazebo::EntityComponentManager &ecm)
 {
-  auto now = std::chrono::steady_clock::now();
+    auto pose = ecm.Component<ignition::gazebo::components::Pose>(mModel.Entity()); 
+
+    if(pose)
+    {
+		nora_idl::msg::RobotState idlPose; 
+		convertToIdl(pose, idlPose); 
+
+		setLatestState(idlPose); 
+    }
+
 }
+
+void PosePublisher::convertToIdl(const ignition::gazebo::components::Pose* aPose, nora_idl::msg::RobotState& anIdlPose)
+{
+	nora_idl::msg::Vec3 pos; 
+	pos.set__x(aPose->Data().X());
+	pos.set__y(aPose->Data().Y()); 
+	pos.set__z(aPose->Data().Z()); 
+
+	nora_idl::msg::Euler eul; 
+	eul.set__pitch(aPose->Data().Pitch()); 
+	eul.set__roll(aPose->Data().Roll()); 
+	eul.set__yaw(aPose->Data().Yaw()); 
+
+	ignition::math::Quaterniond quat(aPose->Data().Roll(), aPose->Data().Pitch(), aPose->Data().Yaw()); 
+
+	nora_idl::msg::Quaternion q; 
+	q.set__w(quat.W()); 
+	q.set__x(quat.X()); 
+	q.set__y(quat.Y()); 
+	q.set__z(quat.Z()); 
+
+	// TODO: compute velocities and populate into message 
+
+	auto now = mRosNode->now(); 
+	builtin_interfaces::msg::Time nowTime; 
+	nowTime.set__nanosec(now.nanoseconds()); 
+	nowTime.set__sec(now.seconds()); 
+
+	anIdlPose.set__position(pos); 
+	anIdlPose.set__euler(eul); 
+	anIdlPose.set__quat(q); 
+	anIdlPose.set__timestamp(now);
+}
+
+void PosePublisher::robotStatePublishLoop()
+{
+	while(isRunning())
+	{
+		mPublishRate->start(); 
+		nora_idl::msg::RobotState state = getLatestState(); 
+		mPosPub->publish(state); 
+		mPublishRate->block(); 
+	}
+
+}
+
 
 PosePublisher::~PosePublisher()
 {
@@ -52,7 +124,7 @@ PosePublisher::~PosePublisher()
   }
 
   mRosNode = nullptr; 
-  rclcpp::shutdown(); 
+  //rclcpp::shutdown(); 
 
   while(rclcpp::ok())
   {

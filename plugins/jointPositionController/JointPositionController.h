@@ -38,6 +38,9 @@ private:
 	bool getJointPositions(ignition::gazebo::EntityComponentManager &ecm, std::vector<double>& aJointVecOut);
 	void jointPositionPublishLoop(ignition::gazebo::EntityComponentManager &ecm);
 
+	void setRunning(bool aFlag) {std::lock_guard<std::mutex> lock(mRunMutex); mRunning = aFlag; }
+	bool isRunning() {std::lock_guard<std::mutex> lock(mRunMutex); return mRunning; }
+
   	template <typename T>
 	std::vector<T> parseVector(const std::string &str)
 	{
@@ -68,6 +71,8 @@ private:
 	std::chrono::time_point<std::chrono::steady_clock> mPrevTime;  
 
 	std::mutex mCommandMutex; 
+	std::mutex mRunMutex; 
+	bool mRunning; 
 };
 
 // Plugin registration
