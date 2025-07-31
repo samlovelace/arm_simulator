@@ -137,18 +137,22 @@
       </plugin>
     </include-->
 
-    <include>
+    <!--include>
       <uri>model://stereo_camera</uri>
       <pose>0.5 0.6 1.5 -4.280049 -24.0831757 115.008083</pose>
       
       <plugin filename="libpose_publisher.so" name="PosePublisher">
         <topic_name>/robot/pose</topic_name>
       </plugin>
-    </include>
+    </include-->
 
     <include> 
       <uri>model://ELM4-Robot</uri> 
       <pose> -2 -2 0.5 0 0 0 </pose> 
+
+      <plugin filename="libpose_publisher.so" name="PosePublisher">
+        <topic_name>/robot/pose</topic_name>
+      </plugin> 
     </include> 
 
     <include> 
