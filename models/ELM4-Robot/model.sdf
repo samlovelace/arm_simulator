@@ -12,7 +12,7 @@
 
     <!-- Arm -->
     <include>
-      <uri>model://ur10</uri>
+      <uri>model://ur5_rg2</uri>
       <name>arm</name>
       <pose>0 0 0.175 0 0 0</pose>
       <plugin filename="libjoint_position_controller.so" name="JointPositionController">
