@@ -126,56 +126,39 @@
       <name>table2</name>
       <pose>0.794 0 0 0 -0 1.5708</pose>
     </include>
-    <include>
+    <!--include>
       <uri>model://ur10</uri>
       <name>ur10</name>
-      <pose>0 0 1.25 0 0 0</pose>
+      <pose>0 0 3 0 0 0</pose>
       <plugin filename="libjoint_position_controller.so" name="JointPositionController">
         <publish>UR/joint_positions</publish> 
         <command>UR/joint_commands</command>
-        <initial_position>0 -1.57 0 0 0 0</initial_position> 
+        <initial_position>0 0 -1.57 0 0 0</initial_position> 
       </plugin>
-    </include>
-
-      <include>
-      <uri>
-      https://fuel.ignitionrobotics.org/1.0/GoogleResearch/models/Transformers_Age_of_Extinction_Mega_1Step_Bumblebee_Figure
-      </uri>
-      <pose>1 0 1.025 0 0 0</pose>
-    </include>
-
+    </include-->
     <include>
-      <uri>
-      https://fuel.ignitionrobotics.org/1.0/GoogleResearch/models/Avengers_Thor_PLlrpYniaeB
-      </uri>
-      <pose>1 0.5 1.025 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>
-        https://fuel.ignitionrobotics.org/1.0/GoogleResearch/models/My_Little_Pony_Princess_Celestia
-      </uri>
-      <pose>1 -0.5 1.025 0 0 1.5708</pose>
-    </include>
+      <uri>model://mobileRobot</uri>
+      <pose>2 1 0.25 0 0 0</pose> 
+    </include> 
 
     <include>
       <uri>model://stereo_camera</uri>
-      <pose>0.5 0.6 1.5 0 0 1.57</pose>
+      <pose>0.5 0.6 1.5 -4.280049 -24.0831757 115.008083</pose>
       
       <plugin filename="libpose_publisher.so" name="PosePublisher">
         <topic_name>/robot/pose</topic_name>
       </plugin>
     </include>
 
+    <include> 
+      <uri>model://cube</uri> 
+      <pose>0 0 1.5 0 0 0</pose>
+    </include> 
+    
     <include>
       <uri>model://VisitorChair</uri>
-      <pose>0.5 2.5 0 0 0 0.707</pose>
+      <pose>0.5 2.0 0 0 0 0.707</pose>
     </include>
-
-    <include>
-      <uri>model://shelf_aruco</uri>
-      <pose>1 3.5 0 0 0 0</pose> 
-    </include> 
 
     <light name='sun' type='directional'>
       <pose>0 0 10 0 -0 0</pose>

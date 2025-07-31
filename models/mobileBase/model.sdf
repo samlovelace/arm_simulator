@@ -1,0 +1,47 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="mobileBase">
+    <pose>0 0 0 0 0 0</pose>
+
+    <link name="main">
+      <pose>0 0 0 0 0 0</pose>
+
+      <!-- Simple cube to visualize the camera body -->
+      <visual name="visual">
+        <pose>0 0 -0.1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.75 0.75 0.25</size>
+          </box>
+        </geometry>
+        <material>
+          <ambient>0 0 1 1</ambient>
+          <diffuse>0 0 1 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+
+      <collision name="collision">
+        <pose>0 0 -0.1 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.75 0.75 0.25</size>
+          </box>
+        </geometry>
+      </collision>
+
+    <!-- Inertial properties -->
+      <inertial>
+        <mass>0.1</mass>
+        <inertia>
+          <ixx>100000</ixx>
+          <iyy>100000</iyy>
+          <izz>100000</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link> 
+  </model> 
+</sdf> 

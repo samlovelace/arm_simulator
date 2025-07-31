@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="mobileRobot">
+    <static>false</static>
+
+    <!-- Mobile base -->
+    <include>
+      <uri>model://mobileBase</uri>
+      <name>mobile</name>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Arm -->
+    <include>
+      <uri>model://ur10</uri>
+      <name>arm</name>
+      <pose>0 0 0 0 0 0</pose>
+      <plugin filename="libjoint_position_controller.so" name="JointPositionController">
+        <publish>UR/joint_positions</publish> 
+        <command>UR/joint_commands</command>
+        <initial_position>0 0 -1.57 0 0 0</initial_position> 
+      </plugin>
+    </include>
+
+    <!-- Optional helper frame at the mount location on the mobile base -->
+    <frame name="arm_mount" attached_to="mobile::main">
+      <!-- Adjust to the bolt pattern / flange height on your base -->
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+
+    <!-- Fixed joint (weld) between the base link and the arm’s base link -->
+    <joint name="weld_arm_to_base" type="fixed">
+      <!-- Use scoped names: modelName::linkName -->
+      <parent>mobile::main</parent>
+      <child>arm::base_link</child>
+    </joint>
+  </model>
+</sdf>

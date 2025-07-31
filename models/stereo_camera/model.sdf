@@ -64,7 +64,7 @@
 
       <!-- Left camera sensor -->
       <sensor name="left_camera" type="camera">
-        <pose>0 -0.06 0 0 0 0</pose>
+        <pose>0 0 0 0 0 0</pose>
         <camera>
           <horizontal_fov>1.3962634</horizontal_fov>
           <image>
@@ -84,7 +84,7 @@
 
       <!-- Right camera sensor -->
       <sensor name="right_camera" type="camera">
-        <pose>0 0.06 0 0 0 0</pose>
+        <pose>0 0.12 0 0 0 0</pose>
         <camera>
           <horizontal_fov>1.3962634</horizontal_fov>
           <image>
@@ -93,8 +93,8 @@
             <format>R8G8B8</format>
           </image>
           <clip>
-            <near>0.1</near>
-            <far>100</far>
+            <near>0.5</near>
+            <far>3.5</far>
           </clip>
         </camera>
         <always_on>1</always_on>
