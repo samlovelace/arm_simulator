@@ -55,7 +55,13 @@ void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
   ignmsg << "Publishing manipulator joint positions on /" << publishTopicName << "\n"; 
   ignmsg << "Subscribing to manipulator joint commands on /" << commandTopicName << "\n";
 
-  rclcpp::init(0, nullptr); 
+  auto ctx = rclcpp::contexts::get_global_default_context(); 
+  
+  if(!ctx->is_valid())
+  {
+    rclcpp::init(0, nullptr); 
+  }
+
   mRosNode = rclcpp::Node::make_shared("joint_controller");
   mCmdSub = mRosNode->create_subscription<std_msgs::msg::Float64MultiArray>(commandTopicName, 10, std::bind(&JointPositionController::commandCallback, this, std::placeholders::_1)); 
   mPosPub = mRosNode->create_publisher<std_msgs::msg::Float64MultiArray>(publishTopicName, 10); 
@@ -195,7 +201,11 @@ JointPositionController::~JointPositionController()
   }
 
   mRosNode = nullptr; 
-  rclcpp::shutdown(); 
+	
+  if(rclcpp::ok())
+	{
+		rclcpp::shutdown(); 
+	}
 
   while(rclcpp::ok())
   {

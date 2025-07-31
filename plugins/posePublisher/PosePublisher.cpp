@@ -32,7 +32,12 @@ void PosePublisher::Configure(const ignition::gazebo::Entity &entity,
 		rate = anSdf->Get<int>("rate"); 
 	}
 
-  	//rclcpp::init(0, nullptr); 
+  	auto ctx = rclcpp::contexts::get_global_default_context(); 
+  
+	if(!ctx->is_valid())
+	{
+		rclcpp::init(0, nullptr); 
+	} 
 	
 	mRosNode = rclcpp::Node::make_shared("pose_publisher");
 	mPosPub = mRosNode->create_publisher<nora_idl::msg::RobotState>(publishTopicName, 10); 
@@ -124,8 +129,12 @@ PosePublisher::~PosePublisher()
 	}
 
 	mRosNode = nullptr; 
-	//rclcpp::shutdown(); 
-
+	
+	if(rclcpp::ok())
+	{
+		rclcpp::shutdown(); 
+	}
+	
 	while(rclcpp::ok())
 	{
 		std::cout << "shutting down ROS2 plugin" << std::endl; 
