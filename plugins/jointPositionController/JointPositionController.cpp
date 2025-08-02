@@ -80,8 +80,8 @@ void JointPositionController::Configure(const ignition::gazebo::Entity &entity,
 
   // initial joint pos here  
   mPrevPosErr = mJointCommands; 
-  mKp = {1000, 5000, 1000, 5000, 500, 1000}; 
-  mKd = {100, 100, 100, 100, 50, 100}; 
+  mKp = {1000, 5000, 1000, 5000, 500, 1000, 10000, 10000}; 
+  mKd = {100, 100, 100, 100, 50, 100, 0, 0}; 
   mPrevTime = std::chrono::steady_clock::now(); 
 
   mPublishRate = std::make_unique<RateController>(10); 
@@ -100,7 +100,7 @@ void JointPositionController::PreUpdate(const ignition::gazebo::UpdateInfo&, ign
   std::vector<double> jntPosCopy;
   if(!getJointPositions(ecm, jntPosCopy))
   {
-    return; 
+	return; 
   }
 
   for(int i = 0; i < mJoints.size(); i++)
@@ -188,6 +188,8 @@ std::string JointPositionController::jointTypeToString(const sdf::JointType& aTy
 
 JointPositionController::~JointPositionController()
 {
+  ignmsg << "###################################################################################" << std::endl; 
+  ignmsg << "##################### JOINT POSITION CONTROLLER DESTRUCTOR CALLED #################" << std::endl; 
   setRunning(false); 
 
   if(mRosSpinThread.joinable())
@@ -212,4 +214,8 @@ JointPositionController::~JointPositionController()
     std::cout << "shutting down ROS2 plugin" << std::endl; 
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));  
   }
+
+  ignmsg << "###################################################################################" << std::endl; 
+  ignmsg << "##################### RCLCPP SHUTDOWN SUCCESSFUL ##################################" << std::endl;
+  ignmsg << "###################################################################################" << std::endl;  
 }

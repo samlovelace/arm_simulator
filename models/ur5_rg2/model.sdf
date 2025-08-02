@@ -2,6 +2,8 @@
 <sdf version="1.7">
     <model name="ur5_rg2">
 
+        <self_collide>true</self_collide>
+
         <!-- Fix To World -->
         <joint name="ur5_rg2_joint_world" type="fixed">
             <parent>world</parent>
@@ -285,8 +287,8 @@
                 <xyz>0 0 1</xyz>
                 <limit>
                     <effort>150</effort>
-                    <lower>-6.28319</lower>
-                    <upper>6.28319</upper>
+                    <lower>-3.141592654</lower>
+                    <upper>3.141592654</upper>
                     <velocity>3.15</velocity>
                 </limit>
                 <dynamics>
@@ -306,8 +308,8 @@
                 <xyz>0 1 0</xyz>
                 <limit>
                     <effort>150</effort>
-                    <lower>-6.28319</lower>
-                    <upper>6.28319</upper>
+                    <lower>-1.57</lower>
+                    <upper>1.57</upper>
                     <velocity>3.15</velocity>
                 </limit>
                 <dynamics>
@@ -327,8 +329,8 @@
                 <xyz>0 1 0</xyz>
                 <limit>
                     <effort>150</effort>
-                    <lower>-6.28319</lower>
-                    <upper>6.28319</upper>
+                    <lower>-2.75</lower>
+                    <upper>2.75</upper>
                     <velocity>3.15</velocity>
                 </limit>
                 <dynamics>
@@ -539,7 +541,7 @@
             <axis>
                 <xyz>0 0 1</xyz>
                 <limit>
-                    <effort>10.6</effort>
+                    <effort>1000.6</effort>
                     <lower>0.0</lower>
                     <upper>1.18</upper>
                     <velocity>1.57</velocity>
@@ -560,7 +562,7 @@
             <axis>
                 <xyz>0 0 -1</xyz>
                 <limit>
-                    <effort>10.6</effort>
+                    <effort>1000.6</effort>
                     <lower>0.0</lower>
                     <upper>1.18</upper>
                     <velocity>1.57</velocity>
