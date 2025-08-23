@@ -40,7 +40,7 @@ void PosePublisher::Configure(const ignition::gazebo::Entity &entity,
 	} 
 	
 	mRosNode = rclcpp::Node::make_shared("pose_publisher");
-	mPosPub = mRosNode->create_publisher<nora_idl::msg::RobotState>(publishTopicName, 10); 
+	mPosPub = mRosNode->create_publisher<robot_idl::msg::RobotState>(publishTopicName, 10); 
 
 	mRosSpinThread = std::thread([this](){
 		rclcpp::spin(mRosNode); 
@@ -62,28 +62,28 @@ void PosePublisher::PostUpdate(const ignition::gazebo::UpdateInfo&, const igniti
 
     if(pose)
     {
-		nora_idl::msg::RobotState idlPose; 
+		robot_idl::msg::RobotState idlPose; 
 		convertToIdl(pose, idlPose); 
 		setLatestState(idlPose); 
     }
 
 }
 
-void PosePublisher::convertToIdl(const ignition::gazebo::components::Pose* aPose, nora_idl::msg::RobotState& anIdlPose)
+void PosePublisher::convertToIdl(const ignition::gazebo::components::Pose* aPose, robot_idl::msg::RobotState& anIdlPose)
 {
-	nora_idl::msg::Vec3 pos; 
+	robot_idl::msg::Vec3 pos; 
 	pos.set__x(aPose->Data().X());
 	pos.set__y(aPose->Data().Y()); 
 	pos.set__z(aPose->Data().Z()); 
 
-	nora_idl::msg::Euler eul; 
+	robot_idl::msg::Euler eul; 
 	eul.set__pitch(aPose->Data().Pitch()); 
 	eul.set__roll(aPose->Data().Roll()); 
 	eul.set__yaw(aPose->Data().Yaw()); 
 
 	ignition::math::Quaterniond quat(aPose->Data().Roll(), aPose->Data().Pitch(), aPose->Data().Yaw()); 
 
-	nora_idl::msg::Quaternion q; 
+	robot_idl::msg::Quaternion q; 
 	q.set__w(quat.W()); 
 	q.set__x(quat.X()); 
 	q.set__y(quat.Y()); 
@@ -107,13 +107,12 @@ void PosePublisher::robotStatePublishLoop()
 	while(isRunning())
 	{
 		mPublishRate->start(); 
-		nora_idl::msg::RobotState state = getLatestState(); 
+		robot_idl::msg::RobotState state = getLatestState(); 
 		mPosPub->publish(state); 
 		mPublishRate->block(); 
 	}
 
 }
-
 
 PosePublisher::~PosePublisher()
 {

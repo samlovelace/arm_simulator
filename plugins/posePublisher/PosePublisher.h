@@ -7,7 +7,7 @@
 #include <ignition/gazebo/Joint.hh>
 
 #include <rclcpp/rclcpp.hpp>
-#include "nora_idl/msg/robot_state.hpp"
+#include "robot_idl/msg/robot_state.hpp"
 
 #include <thread>
 #include <memory> 
@@ -36,7 +36,7 @@ private:
 
 	ignition::gazebo::Model mModel{ignition::gazebo::kNullEntity};
 	std::shared_ptr<rclcpp::Node> mRosNode;
-	rclcpp::Publisher<nora_idl::msg::RobotState>::SharedPtr mPosPub; 
+	rclcpp::Publisher<robot_idl::msg::RobotState>::SharedPtr mPosPub; 
 	std::thread mRosSpinThread;
 	std::thread mPublishThread; 
 	std::unique_ptr<RateController> mPublishRate; 
@@ -47,13 +47,13 @@ private:
 	bool mRunning; 
 
 	void robotStatePublishLoop();
-	void convertToIdl(const ignition::gazebo::components::Pose* aPose, nora_idl::msg::RobotState& anIdlPose);
+	void convertToIdl(const ignition::gazebo::components::Pose* aPose, robot_idl::msg::RobotState& anIdlPose);
 
-	void setLatestState(nora_idl::msg::RobotState aState) {std::lock_guard<std::mutex> lock(mStateMutex); mLatestState = aState;}
-	nora_idl::msg::RobotState getLatestState() {std::lock_guard<std::mutex> lock(mStateMutex); return mLatestState; }
+	void setLatestState(robot_idl::msg::RobotState aState) {std::lock_guard<std::mutex> lock(mStateMutex); mLatestState = aState;}
+	robot_idl::msg::RobotState getLatestState() {std::lock_guard<std::mutex> lock(mStateMutex); return mLatestState; }
 
 	std::mutex mStateMutex; 
-	nora_idl::msg::RobotState mLatestState; 
+	robot_idl::msg::RobotState mLatestState; 
 
 };
 
