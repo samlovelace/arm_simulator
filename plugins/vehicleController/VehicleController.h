@@ -4,6 +4,8 @@
 #include <ignition/gazebo/components/JointPosition.hh>
 #include <ignition/plugin/Register.hh>
 #include <ignition/gazebo/Joint.hh>
+#include <ignition/transport11/ignition/transport/Node.hh>
+#include <ignition/msgs/twist.pb.h>
 
 #include <rclcpp/rclcpp.hpp>
 #include "robot_idl/msg/robot_state.hpp"
@@ -46,6 +48,8 @@ private:
     robot_idl::msg::RobotState::SharedPtr getLatestNav(); 
     robot_idl::msg::VehicleWaypoint::SharedPtr getLatestCmd(); 
 
+	void publishTwistCmd(double x, double y, double h);
+
   	template <typename T>
 	std::vector<T> parseVector(const std::string &str)
 	{
@@ -86,6 +90,10 @@ private:
 
 	std::mutex mRunMutex; 
 	bool mRunning; 
+
+	ignition::transport::Node mNode;
+	ignition::transport::Node::Publisher mCmdVelPub;
+
 };
 
 // Plugin registration

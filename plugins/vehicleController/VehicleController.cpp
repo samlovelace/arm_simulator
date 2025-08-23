@@ -1,5 +1,7 @@
 
 #include "VehicleController.h"
+#include <ignition/math/Quaternion.hh>
+#include <ignition/math/Vector3.hh>
 
 void VehicleController::Configure(const ignition::gazebo::Entity &entity,
 					              const std::shared_ptr<const sdf::Element> &anSdf,
@@ -48,12 +50,17 @@ void VehicleController::Configure(const ignition::gazebo::Entity &entity,
     
     // TODO: make config 
     mControlRate = std::make_unique<RateController>(10); 
+
+    mCmdVelPub = mNode.Advertise<ignition::msgs::Twist>("/cmd_vel"); 
+
 }
 
 void VehicleController::PreUpdate(const ignition::gazebo::UpdateInfo&, ignition::gazebo::EntityComponentManager &ecm)
 {
     if(mNavRecvd && mCmdRecvd && !mControlLoopLaunched)
     {
+        setRunning(true); 
+
         mControlThread = std::thread([this](){
             controlLoop(); 
         }); 
@@ -111,17 +118,110 @@ void VehicleController::navCallback(robot_idl::msg::RobotState::SharedPtr aMsg)
 
 void VehicleController::controlLoop()
 {
-    while(isRunning())
+    // Go-to-pose gains (ensure k_alpha > k_r and k_beta < 0)
+    const double k_r     = 8.0;   // distance gain
+    const double k_alpha = 10.0;   // heading-to-goal gain
+    const double k_beta  = -1.0;  // goal-heading (final yaw) gain
+
+    // Limits & tolerances
+    const double max_linear_vel   = 2.0;   // m/s
+    const double max_angular_vel  = 2.0;   // rad/s
+    const double position_tolerance = 0.01; // m
+    const double yaw_tolerance      = 0.05; // rad
+
+    // Slowdown distance so we don’t overshoot near goal
+    const double slow_radius = 0.6; // m
+
+    auto wrap = [](double a) {
+        return std::atan2(std::sin(a), std::cos(a)); // (-pi, pi]
+    };
+
+    static int logCounter = 0;
+
+    while (isRunning())
     {
-        mControlRate->start(); 
+        mControlRate->start();
 
-        // do control
-        auto cmd = getLatestCmd(); 
-        auto nav = getLatestNav(); 
+        auto cmd = getLatestCmd();
+        auto nav = getLatestNav();
 
-        mControlRate->block(); 
+        // Desired yaw from quaternion
+        ignition::math::Quaterniond q(cmd->orientation.w,
+                                      cmd->orientation.x,
+                                      cmd->orientation.y,
+                                      cmd->orientation.z);
+        ignition::math::Vector3d goal_euler = q.Euler();
+        const double yaw_goal = goal_euler.Z();
+
+        // Errors in world frame
+        const double dx = cmd->position.x - nav->position.x;
+        const double dy = cmd->position.y - nav->position.y;
+        const double r  = std::hypot(dx, dy);
+
+        // Bearing from robot -> goal (world frame)
+        const double bearing = std::atan2(dy, dx);
+
+        // Heading errors
+        const double alpha   = wrap(bearing - nav->euler.yaw); // how much to turn to face goal
+        const double beta    = wrap(yaw_goal - bearing);       // how goal yaw differs from LOS
+        const double yaw_err = wrap(yaw_goal - nav->euler.yaw);
+
+        // If fully converged, hold still (controller keeps running)
+        if (r < position_tolerance && std::abs(yaw_err) < yaw_tolerance)
+        {
+            publishTwistCmd(0.0, 0.0, 0.0);
+
+            if (++logCounter % 20 == 0) {
+                std::cout << "[Hold] Nav(x y yaw): " << nav->position.x << ", " << nav->position.y << ", " << nav->euler.yaw
+                          << " | Cmd(x y yaw): " << cmd->position.x << ", " << cmd->position.y << ", " << yaw_goal
+                          << " | r: " << r << " yaw_err: " << yaw_err << std::endl;
+            }
+
+            mControlRate->block();
+            continue;
+        }
+
+        // Go-to-pose control law
+        double v = k_r * r * std::cos(alpha);
+        double w = k_alpha * alpha + k_beta * beta;
+
+        // Smooth approach near goal
+        const double slow = std::clamp(r / slow_radius, 0.0, 1.0);
+        v *= slow;
+
+        // (Optional) forward-only: uncomment to avoid reversing
+        // if (v < 0.0) v = 0.0;
+
+        // Clamp to limits
+        v = std::clamp(v, -max_linear_vel,  max_linear_vel);
+        w = std::clamp(w, -max_angular_vel, max_angular_vel);
+
+        publishTwistCmd(v, 0.0, w);
+
+        // Log periodically or when far
+        if (++logCounter % 10 == 0 || r > 0.5)
+        {
+            std::cout << "Nav (x y yaw): " << nav->position.x << ", " << nav->position.y << ", " << nav->euler.yaw
+                      << " | Cmd (x y yaw): " << cmd->position.x << ", " << cmd->position.y << ", " << yaw_goal
+                      << " | r: " << r << " alpha: " << alpha << " beta: " << beta
+                      << " | v: " << v << " w: " << w << std::endl;
+        }
+
+        mControlRate->block();
     }
+}
 
+void VehicleController::publishTwistCmd(double x, double y, double h)
+{
+    ignition::msgs::Twist twistMsg;
+    twistMsg.mutable_linear()->set_x(x);   // Forward velocity
+    twistMsg.mutable_linear()->set_y(0);
+    twistMsg.mutable_linear()->set_z(0.0);
+    twistMsg.mutable_angular()->set_x(0.0);
+    twistMsg.mutable_angular()->set_y(0.0);
+    twistMsg.mutable_angular()->set_z(h);  // Yaw rotation
+
+    mCmdVelPub.Publish(twistMsg);
 }
 
 VehicleController::~VehicleController()
