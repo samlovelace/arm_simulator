@@ -19,7 +19,8 @@ def generate_launch_description():
             executable='robot_state_publisher',
             name='robot_state_publisher',
             parameters=[{'robot_description': open(
-                os.path.join(pkg_share, 'models/ur5_rg2/', 'manipulator.urdf')).read()}],
+                os.path.join(pkg_share, 'models/ur5_rg2', 'manipulator.urdf')).read()}],
+                #os.path.join(pkg_share, 'models/ur5_rg2/', 'manipulator.urdf')).read()}],
         ),
 
         Node(
