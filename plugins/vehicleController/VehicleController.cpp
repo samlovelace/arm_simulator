@@ -44,15 +44,13 @@ void VehicleController::Configure(const ignition::gazebo::Entity &entity,
 
     // initial joint pos here  
     mPrevPosErr = {0, 0, 0}; 
-    mKp = {1000, 5000, 1000};  
-    mKd = {100, 100, 100};  
+    mKp = {10, 10, 10};  
+    mKd = {20, 20, 20};  
     mPrevTime = std::chrono::steady_clock::now();
     
     // TODO: make config 
     mControlRate = std::make_unique<RateController>(10); 
-
     mCmdVelPub = mNode.Advertise<ignition::msgs::Twist>("/cmd_vel"); 
-
 }
 
 void VehicleController::PreUpdate(const ignition::gazebo::UpdateInfo&, ignition::gazebo::EntityComponentManager &ecm)
@@ -118,24 +116,33 @@ void VehicleController::navCallback(robot_idl::msg::RobotState::SharedPtr aMsg)
 
 void VehicleController::controlLoop()
 {
-    // Go-to-pose gains (ensure k_alpha > k_r and k_beta < 0)
-    const double k_r     = 8.0;   // distance gain
-    const double k_alpha = 10.0;   // heading-to-goal gain
-    const double k_beta  = -1.0;  // goal-heading (final yaw) gain
+    //--------------------------------------------------------
+    // Tunable Parameters
+    //--------------------------------------------------------
+    const double max_linear_vel   = 1.5;   // m/s
+    const double max_angular_vel  = 1.2;   // rad/s
 
-    // Limits & tolerances
-    const double max_linear_vel   = 2.0;   // m/s
-    const double max_angular_vel  = 2.0;   // rad/s
-    const double position_tolerance = 0.01; // m
-    const double yaw_tolerance      = 0.05; // rad
+    // Hysteresis tolerances
+    const double pos_tol_enter    = 0.40;  // enter FINAL_YAW mode
+    const double pos_tol_exit     = 0.60;  // leave FINAL_YAW mode
+    const double yaw_tol          = 0.12;  // ~7 degrees
 
-    // Slowdown distance so we don’t overshoot near goal
-    const double slow_radius = 0.6; // m
+    // Approach controller gains
+    const double k_r     = 1.8;     // distance gain
+    const double k_alpha = 2.4;     // turn toward goal
+    const double k_beta  = -1.0;    // final heading
 
-    auto wrap = [](double a) {
+    // FINAL_YAW gains
+    const double k_yaw   = 1.2;     // proportional yaw gain
+
+    //--------------------------------------------------------
+    // Helpers
+    //--------------------------------------------------------
+    auto wrap = [](double a){
         return std::atan2(std::sin(a), std::cos(a)); // (-pi, pi]
     };
 
+    static bool in_final_yaw = false;
     static int logCounter = 0;
 
     while (isRunning())
@@ -145,66 +152,109 @@ void VehicleController::controlLoop()
         auto cmd = getLatestCmd();
         auto nav = getLatestNav();
 
-        // Desired yaw from quaternion
+        if (!cmd || !nav) {
+            publishTwistCmd(0,0,0);
+            mControlRate->block();
+            continue;
+        }
+
+        //--------------------------------------------------------
+        // Extract goal yaw
+        //--------------------------------------------------------
         ignition::math::Quaterniond q(cmd->orientation.w,
                                       cmd->orientation.x,
                                       cmd->orientation.y,
                                       cmd->orientation.z);
-        ignition::math::Vector3d goal_euler = q.Euler();
-        const double yaw_goal = goal_euler.Z();
+        double yaw_goal = q.Euler().Z();
 
-        // Errors in world frame
-        const double dx = cmd->position.x - nav->position.x;
-        const double dy = cmd->position.y - nav->position.y;
-        const double r  = std::hypot(dx, dy);
+        //--------------------------------------------------------
+        // Position & heading errors
+        //--------------------------------------------------------
+        double dx = cmd->position.x - nav->position.x;
+        double dy = cmd->position.y - nav->position.y;
+        double r  = std::hypot(dx, dy);
 
-        // Bearing from robot -> goal (world frame)
-        const double bearing = std::atan2(dy, dx);
+        double bearing = std::atan2(dy, dx);
+        double alpha   = wrap(bearing - nav->euler.yaw);
+        double beta    = wrap(yaw_goal - bearing);
+        double yaw_err = wrap(yaw_goal - nav->euler.yaw);
 
-        // Heading errors
-        const double alpha   = wrap(bearing - nav->euler.yaw); // how much to turn to face goal
-        const double beta    = wrap(yaw_goal - bearing);       // how goal yaw differs from LOS
-        const double yaw_err = wrap(yaw_goal - nav->euler.yaw);
-
-        // If fully converged, hold still (controller keeps running)
-        if (r < position_tolerance && std::abs(yaw_err) < yaw_tolerance)
+        //--------------------------------------------------------
+        // Hysteresis: Manage FINAL_YAW mode
+        //--------------------------------------------------------
+        if (!in_final_yaw)
         {
-            publishTwistCmd(0.0, 0.0, 0.0);
+            // Enter yaw mode when close enough
+            if (r < pos_tol_enter)
+                in_final_yaw = true;
+        }
+        else
+        {
+            // Leave yaw mode only if far out
+            if (r > pos_tol_exit)
+                in_final_yaw = false;
+        }
 
-            if (++logCounter % 20 == 0) {
-                std::cout << "[Hold] Nav(x y yaw): " << nav->position.x << ", " << nav->position.y << ", " << nav->euler.yaw
-                          << " | Cmd(x y yaw): " << cmd->position.x << ", " << cmd->position.y << ", " << yaw_goal
-                          << " | r: " << r << " yaw_err: " << yaw_err << std::endl;
+        //--------------------------------------------------------
+        // FINAL_YAW MODE (rotate only)
+        //--------------------------------------------------------
+        if (in_final_yaw)
+        {
+            // Fully done
+            if (std::abs(yaw_err) < yaw_tol)
+            {
+                publishTwistCmd(0, 0, 0);
+
+                if (++logCounter % 20 == 0) {
+                    std::cout << "[HOLD] r=" << r 
+                              << " yaw_err=" << yaw_err 
+                              << " (done)" << std::endl;
+                }
+
+                mControlRate->block();
+                continue;
             }
+
+            // Slower rotation when close to target XY
+            double slowdown = std::clamp(r / pos_tol_enter, 0.3, 1.0);
+
+            double w = k_yaw * yaw_err;
+            w *= slowdown;   // reduce overshoot
+
+            w = std::clamp(w, -max_angular_vel, max_angular_vel);
+
+            publishTwistCmd(0.0, 0.0, w);
+
+            std::cout << "[FINAL_YAW] r=" << r 
+                      << " yaw_err=" << yaw_err 
+                      << " w=" << w << std::endl;
 
             mControlRate->block();
             continue;
         }
 
-        // Go-to-pose control law
+        //--------------------------------------------------------
+        // APPROACH MODE (drive + turn)
+        //--------------------------------------------------------
         double v = k_r * r * std::cos(alpha);
         double w = k_alpha * alpha + k_beta * beta;
 
-        // Smooth approach near goal
-        const double slow = std::clamp(r / slow_radius, 0.0, 1.0);
+        // Slow down when near the goal
+        double slow = std::clamp(r / 1.0, 0.3, 1.0);
         v *= slow;
 
-        // (Optional) forward-only: uncomment to avoid reversing
-        // if (v < 0.0) v = 0.0;
-
-        // Clamp to limits
-        v = std::clamp(v, -max_linear_vel,  max_linear_vel);
+        v = std::clamp(v, -max_linear_vel, max_linear_vel);
         w = std::clamp(w, -max_angular_vel, max_angular_vel);
 
         publishTwistCmd(v, 0.0, w);
 
-        // Log periodically or when far
-        if (++logCounter % 10 == 0 || r > 0.5)
-        {
-            std::cout << "Nav (x y yaw): " << nav->position.x << ", " << nav->position.y << ", " << nav->euler.yaw
-                      << " | Cmd (x y yaw): " << cmd->position.x << ", " << cmd->position.y << ", " << yaw_goal
-                      << " | r: " << r << " alpha: " << alpha << " beta: " << beta
-                      << " | v: " << v << " w: " << w << std::endl;
+        if (++logCounter % 5 == 0) {
+            std::cout << "[APPROACH] r=" << r 
+                      << " alpha=" << alpha 
+                      << " beta=" << beta 
+                      << " v=" << v 
+                      << " w=" << w 
+                      << std::endl;
         }
 
         mControlRate->block();
