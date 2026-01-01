@@ -17,13 +17,15 @@ class SimulatorImpl : public ISimulator
 public:
     SimulatorImpl(std::unique_ptr<IDynamicsModel<State, Control>> aModel, 
                   std::unique_ptr<IIntegrator<State, Control>> anIntegrator, 
-                  std::unique_ptr<IInputFetcher> anInput, 
+                  std::unique_ptr<IInputFetcher<Control>> anInput, 
                   std::function<void(const State&)> aPublishFunc) : 
         mModel(std::move(aModel)),
         mIntegrator(std::move(anIntegrator)), 
         mInputFetcher(std::move(anInput)), 
         mRate(50),
-        mPublishStateFunc(aPublishFunc)
+        mPublishStateFunc(aPublishFunc),
+        mState(),
+        mLatestInput()
         {}
     
     ~SimulatorImpl() = default; 
@@ -44,7 +46,7 @@ public:
 
             step();
             mPublishStateFunc(mState); 
-            //std::cout << mState << std::endl; 
+            std::cout << mState << std::endl; 
             
             mRate.block(); 
         }
@@ -52,6 +54,7 @@ public:
 
     void step() override 
     {
+        mLatestInput = mInputFetcher->getLatestInput(); 
         mState = mIntegrator->step(*mModel, mState, mLatestInput, mRate.getDeltaTime());
     }
 
@@ -64,7 +67,7 @@ private:
 
     std::unique_ptr<IDynamicsModel<State, Control>> mModel; 
     std::unique_ptr<IIntegrator<State, Control>> mIntegrator;
-    std::unique_ptr<IInputFetcher> mInputFetcher;  
+    std::unique_ptr<IInputFetcher<Control>> mInputFetcher;  
    
     RateController mRate; 
 

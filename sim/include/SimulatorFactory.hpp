@@ -39,7 +39,7 @@ public:
                 std::make_unique<AbvDynamics<State, Control>>(12.7, 0.3); 
 
             // input fetcher 
-            std::unique_ptr<IInputFetcher> input = std::make_unique<AbvUdpInputFetcher>(); 
+            std::unique_ptr<IInputFetcher<Control>> input = std::make_unique<AbvUdpInputFetcher<Control>>(); 
 
             // setup state publisher
             RosTopicManager::getInstance()->createPublisher<robot_idl::msg::AbvState>("abv/sim/state");

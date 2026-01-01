@@ -7,7 +7,6 @@ find_package(robot_idl REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 set(SOURCES 
-    ${CMAKE_CURRENT_LIST_DIR}/src/AbvUdpInputFetcher.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/main.cpp
     ${CMAKE_CURRENT_LIST_DIR}/src/UdpServer.cpp
 )
