@@ -1,6 +1,10 @@
 #ifndef STATES_HPP
 #define STATES_HPP
 
+#include "robot_idl/msg/vec3.hpp"
+#include "robot_idl/msg/abv_state.hpp"
+#include "RosTopicManager.hpp"
+
 struct ThreeDofPlanar
 {
     double x, y, theta;
@@ -63,6 +67,43 @@ inline std::ostream& operator<<(std::ostream& os,
        << s.vy << ", "
        << s.omega << ")";
     return os;
+}
+
+// TODO: a better name for this namespace? 
+namespace StatePublish
+{
+    void threeDofPlanarRosPublishFunc(const ThreeDofPlanar& aState)
+    {
+        // convert to ROS2 msg type 
+        robot_idl::msg::Vec3 position; 
+        robot_idl::msg::Vec3 velocity;
+
+        position.x = aState.x; 
+        position.y = aState.y; 
+        position.z = 0.0; 
+
+        velocity.x = aState.vx; 
+        velocity.y = aState.vy; 
+        velocity.z = 0.0; 
+
+        robot_idl::msg::Vec3 orientation; 
+        orientation.x = 0.0; 
+        orientation.y = 0.0; 
+        orientation.z = aState.theta; 
+
+        robot_idl::msg::Vec3 ang_vel; 
+        ang_vel.x = 0.0; 
+        ang_vel.y = 0.0; 
+        ang_vel.z = aState.omega; 
+
+        robot_idl::msg::AbvState state; 
+        state.set__position(position); 
+        state.set__velocity(velocity); 
+        state.set__orientation(orientation); 
+        state.set__ang_vel(ang_vel);
+
+        RosTopicManager::getInstance()->publishMessage<robot_idl::msg::AbvState>("abv/sim/state", state); 
+    }
 }
 
 #endif 

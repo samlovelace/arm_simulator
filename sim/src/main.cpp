@@ -5,6 +5,8 @@
 int main()
 {
     std::cout << "############ Starting Simulation ############\n"; 
+    rclcpp::init(0, nullptr); 
+
     //std::signal(SIGINT, signalHandler);
     //createLogger();
 
@@ -19,4 +21,6 @@ int main()
     std::string simConfig = "abv"; 
     std::shared_ptr<ISimulator> sim = SimulatorFactory::create(simConfig);
     sim->run(); 
+
+    rclcpp::shutdown(); 
 }

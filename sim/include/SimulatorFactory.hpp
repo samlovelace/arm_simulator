@@ -30,7 +30,7 @@ public:
             using State = ThreeDofPlanar; 
             using Control = AbvControl; 
 
-            // Construct as BASE type
+            // integrator 
             std::unique_ptr<IIntegrator<State, Control>> integrator =
                 std::make_unique<EulerIntegrator<State, Control>>();
             
@@ -41,9 +41,16 @@ public:
             // input fetcher 
             std::unique_ptr<IInputFetcher> input = std::make_unique<AbvUdpInputFetcher>(); 
 
+            // setup state publisher
+            RosTopicManager::getInstance()->createPublisher<robot_idl::msg::AbvState>("abv/sim/state");
+            RosTopicManager::getInstance()->spinNode();     
+        
+
             return std::make_shared<SimulatorImpl<State, Control>>(std::move(model), 
                                                                    std::move(integrator), 
-                                                                   std::move(input)); 
+                                                                   std::move(input), 
+                                                                   std::bind(&StatePublish::threeDofPlanarRosPublishFunc, 
+                                                                             std::placeholders::_1)); 
         }
         else
         {

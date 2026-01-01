@@ -17,10 +17,13 @@ class SimulatorImpl : public ISimulator
 public:
     SimulatorImpl(std::unique_ptr<IDynamicsModel<State, Control>> aModel, 
                   std::unique_ptr<IIntegrator<State, Control>> anIntegrator, 
-                  std::unique_ptr<IInputFetcher> anInput) : 
+                  std::unique_ptr<IInputFetcher> anInput, 
+                  std::function<void(const State&)> aPublishFunc) : 
         mModel(std::move(aModel)),
         mIntegrator(std::move(anIntegrator)), 
-        mInputFetcher(std::move(anInput)), mRate(50)
+        mInputFetcher(std::move(anInput)), 
+        mRate(50),
+        mPublishStateFunc(aPublishFunc)
         {}
     
     ~SimulatorImpl() = default; 
@@ -40,7 +43,8 @@ public:
             mRate.start();  
 
             step();
-            std::cout << mState << std::endl; 
+            mPublishStateFunc(mState); 
+            //std::cout << mState << std::endl; 
             
             mRate.block(); 
         }
@@ -55,6 +59,8 @@ private:
 
     State mState; 
     Control mLatestInput; 
+
+    std::function<void(const State&)> mPublishStateFunc; 
 
     std::unique_ptr<IDynamicsModel<State, Control>> mModel; 
     std::unique_ptr<IIntegrator<State, Control>> mIntegrator;

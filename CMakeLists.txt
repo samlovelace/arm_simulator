@@ -7,7 +7,7 @@ include(plugins/jointPositionController/CMakeLists.txt)
 include(plugins/posePublisher/CMakeLists.txt)
 include(plugins/vehicleController/CMakeLists.txt)
 
-add_subdirectory(sim)
+include(sim/CMakeLists.txt)
 
 # install common files 
 install(DIRECTORY launch models urdf worlds DESTINATION share/${PROJECT_NAME})
