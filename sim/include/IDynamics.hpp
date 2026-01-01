@@ -1,15 +1,15 @@
 #ifndef IDYNAMICS_HPP
 #define IDYNAMICS_HPP
  
-#include <Eigen/Dense>  
-
-class IDynamics 
-{ 
+template<typename State, typename Control>
+class IDynamicsModel
+{
 public:
-    virtual ~IDynamics() = default; 
-    virtual Eigen::VectorXd step() = 0; 
+    virtual ~IDynamicsModel() = default;
 
-private:
-   
+    virtual State computeDerivative(const State& x,
+                                    const Control& u,
+                                    double t) const = 0;
 };
+
 #endif //IDYNAMICS_HPP

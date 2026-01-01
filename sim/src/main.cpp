@@ -1,9 +1,10 @@
 
 // #include <ament_index_cpp/get_package_share_directory.hpp>
-#include "Simulator.h"
+#include "SimulatorFactory.hpp"
 
 int main()
 {
+    std::cout << "############ Starting Simulation ############\n"; 
     //std::signal(SIGINT, signalHandler);
     //createLogger();
 
@@ -15,6 +16,7 @@ int main()
     //     return 0;
     // }
 
-    Simulator sim; 
-    sim.run(); 
+    std::string simConfig = "abv"; 
+    std::shared_ptr<ISimulator> sim = SimulatorFactory::create(simConfig);
+    sim->run(); 
 }
